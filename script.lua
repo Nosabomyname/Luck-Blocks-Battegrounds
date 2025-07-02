@@ -1,4 +1,4 @@
--- ✅ Lucky Blocks GUI by ChatGPT + João (v1.1 com botão JCR7 corrigido)
+-- ✅ Lucky Blocks GUI by ChatGPT + João (v1.2 com aba Sniffer)
 -- 💡 Funcional no KRNL MOBILE
 
 local lp = game.Players.LocalPlayer
@@ -39,10 +39,10 @@ minimizeBtn.TextColor3 = Color3.new(1, 1, 1)
 minimizeBtn.Font = Enum.Font.Gotham
 minimizeBtn.TextSize = 14
 
--- ✅ Restaurar corrigido (posição corrigida + arrastável + visível corretamente em celular deitado)
+-- Restaurar
 local restoreBtn = Instance.new("TextButton", gui)
 restoreBtn.Size = UDim2.new(0, 80, 0, 30)
-restoreBtn.Position = UDim2.new(0.5, -40, 0.65, -15) -- 📌 ajustado para posição mais acima
+restoreBtn.Position = UDim2.new(0.5, -40, 0.65, -15)
 restoreBtn.Text = "JCR7"
 restoreBtn.Visible = false
 restoreBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
@@ -50,7 +50,7 @@ restoreBtn.TextColor3 = Color3.new(1, 1, 1)
 restoreBtn.Font = Enum.Font.Gotham
 restoreBtn.TextSize = 14
 restoreBtn.Active = true
-restoreBtn.Draggable = true -- ✅ agora arrastável
+restoreBtn.Draggable = true
 
 minimizeBtn.MouseButton1Click:Connect(function()
 	frame.Visible = false
@@ -77,6 +77,13 @@ tab2.Text = "Teleporte"
 tab2.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
 tab2.TextColor3 = Color3.new(1, 1, 1)
 
+local tab3 = Instance.new("TextButton", frame)
+tab3.Size = UDim2.new(0, 100, 0, 30)
+tab3.Position = UDim2.new(0, 230, 0, 40)
+tab3.Text = "Sniffer"
+tab3.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+tab3.TextColor3 = Color3.new(1, 1, 1)
+
 -- Páginas
 local exploitsPage = Instance.new("Frame", frame)
 exploitsPage.Size = UDim2.new(1, -20, 0, 180)
@@ -90,19 +97,35 @@ tpPage.Position = exploitsPage.Position
 tpPage.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 tpPage.Visible = false
 
+local sniffPage = Instance.new("Frame", frame)
+sniffPage.Size = exploitsPage.Size
+sniffPage.Position = exploitsPage.Position
+sniffPage.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+sniffPage.Visible = false
+
 -- Alternar abas
 tab1.MouseButton1Click:Connect(function()
 	exploitsPage.Visible = true
 	tpPage.Visible = false
+	sniffPage.Visible = false
 end)
 
 tab2.MouseButton1Click:Connect(function()
 	exploitsPage.Visible = false
 	tpPage.Visible = true
+	sniffPage.Visible = false
 end)
 
--- Dropdown de blocos
+tab3.MouseButton1Click:Connect(function()
+	exploitsPage.Visible = false
+	tpPage.Visible = false
+	sniffPage.Visible = true
+end)
+
+-- Conteúdo da aba Exploits
 local blockName = "LuckyBlock"
+local howmany = 1
+
 local dropdown = Instance.new("TextBox", exploitsPage)
 dropdown.Size = UDim2.new(1, -20, 0, 30)
 dropdown.Position = UDim2.new(0, 10, 0, 10)
@@ -114,8 +137,6 @@ dropdown.FocusLost:Connect(function()
 	blockName = dropdown.Text
 end)
 
--- Slider (quantidade)
-local howmany = 1
 local slider = Instance.new("TextBox", exploitsPage)
 slider.Size = UDim2.new(1, -20, 0, 30)
 slider.Position = UDim2.new(0, 10, 0, 50)
@@ -127,7 +148,6 @@ slider.FocusLost:Connect(function()
 	howmany = tonumber(slider.Text) or 1
 end)
 
--- Botão: Abrir bloco
 local openBtn = Instance.new("TextButton", exploitsPage)
 openBtn.Size = UDim2.new(1, -20, 0, 30)
 openBtn.Position = UDim2.new(0, 10, 0, 90)
@@ -143,7 +163,6 @@ openBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Botão: Pegar todos
 local allBtn = Instance.new("TextButton", exploitsPage)
 allBtn.Size = UDim2.new(1, -20, 0, 30)
 allBtn.Position = UDim2.new(0, 10, 0, 130)
@@ -152,14 +171,14 @@ allBtn.BackgroundColor3 = Color3.fromRGB(120, 20, 20)
 allBtn.TextColor3 = Color3.new(1,1,1)
 allBtn.MouseButton1Click:Connect(function()
 	for i = 1, 100 do
-		for _, name in pairs({"LuckyBlock","SuperBlock","DiamondBlock","RainbowBlock","GalaxyBlock"}) do
+		for _, name in pairs({"LuckyBlock", "SuperBlock", "DiamondBlock", "RainbowBlock", "GalaxyBlock"}) do
 			local e = game:GetService("ReplicatedStorage"):FindFirstChild("Spawn"..name)
 			if e then e:FireServer() end
 		end
 	end
 end)
 
--- Página de TP
+-- Conteúdo da aba Teleporte
 local scroll = Instance.new("ScrollingFrame", tpPage)
 scroll.Size = UDim2.new(1, -20, 1, -10)
 scroll.Position = UDim2.new(0, 10, 0, 5)
@@ -192,3 +211,104 @@ end
 listarPlayers()
 game.Players.PlayerAdded:Connect(listarPlayers)
 game.Players.PlayerRemoving:Connect(listarPlayers)
+
+-- 📦 Sniffer + Scanner de Inventário (Aba Sniffer)
+
+local sniffing = false
+
+local logFrame = Instance.new("ScrollingFrame", sniffPage)
+logFrame.Size = UDim2.new(1, -20, 1, -90)
+logFrame.Position = UDim2.new(0, 10, 0, 10)
+logFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+logFrame.BorderSizePixel = 0
+logFrame.CanvasSize = UDim2.new(0, 0, 2, 0)
+logFrame.ScrollBarThickness = 3
+logFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+
+local function addLog(text, color)
+	local label = Instance.new("TextLabel", logFrame)
+	label.Size = UDim2.new(1, -10, 0, 20)
+	label.Position = UDim2.new(0, 5, 0, (#logFrame:GetChildren() - 1) * 20)
+	label.BackgroundTransparency = 1
+	label.TextColor3 = color or Color3.new(1, 1, 1)
+	label.Font = Enum.Font.Code
+	label.TextSize = 14
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.Text = text
+end
+
+-- 🔘 Botão: Ativar/Desativar Sniffer
+local toggleSniff = Instance.new("TextButton", sniffPage)
+toggleSniff.Size = UDim2.new(0.48, -15, 0, 30)
+toggleSniff.Position = UDim2.new(0, 10, 1, -35)
+toggleSniff.Text = "Ativar Sniffer"
+toggleSniff.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+toggleSniff.TextColor3 = Color3.new(1, 1, 1)
+toggleSniff.Font = Enum.Font.Gotham
+toggleSniff.TextSize = 14
+
+-- 🔘 Botão: Escanear Inventário
+local invBtn = Instance.new("TextButton", sniffPage)
+invBtn.Size = UDim2.new(0.48, -15, 0, 30)
+invBtn.Position = UDim2.new(0.52, 5, 1, -35)
+invBtn.Text = "Escanear Inventários"
+invBtn.BackgroundColor3 = Color3.fromRGB(80, 120, 160)
+invBtn.TextColor3 = Color3.new(1, 1, 1)
+invBtn.Font = Enum.Font.Gotham
+invBtn.TextSize = 14
+
+toggleSniff.MouseButton1Click:Connect(function()
+	sniffing = not sniffing
+	toggleSniff.Text = sniffing and "Desativar Sniffer" or "Ativar Sniffer"
+	addLog(sniffing and "[SNIFFER ATIVADO]" or "[Sniffer desativado]", Color3.fromRGB(0, 200, 255))
+end)
+
+-- 📡 Escutar RemoteEvents por OnClientEvent
+task.spawn(function()
+	for _, remote in ipairs(game:GetDescendants()) do
+		if remote:IsA("RemoteEvent") then
+			pcall(function()
+				remote.OnClientEvent:Connect(function(...)
+					if sniffing then
+						local args = {...}
+						local str = ""
+						for _, v in pairs(args) do
+							str = str .. tostring(v) .. " | "
+						end
+						addLog("[Remote] "..remote.Name.." → "..str, Color3.fromRGB(0, 255, 140))
+					end
+				end)
+			end)
+		end
+	end
+end)
+
+-- 📡 Capturar RemoteEvents dinâmicos
+game.DescendantAdded:Connect(function(obj)
+	if obj:IsA("RemoteEvent") then
+		pcall(function()
+			obj.OnClientEvent:Connect(function(...)
+				if sniffing then
+					local args = {...}
+					local str = ""
+					for _, v in pairs(args) do
+						str = str .. tostring(v) .. " | "
+					end
+					addLog("[Novo Remote] "..obj.Name.." → "..str, Color3.fromRGB(255, 200, 0))
+				end
+			end)
+		end)
+	end
+end)
+
+-- 🎒 Scanner de Inventários de Todos os Jogadores
+invBtn.MouseButton1Click:Connect(function()
+	addLog("[📦 ESCANEANDO INVENTÁRIOS]", Color3.fromRGB(0, 255, 255))
+	for _, plr in pairs(game.Players:GetPlayers()) do
+		if plr ~= lp and plr:FindFirstChild("Backpack") then
+			for _, item in pairs(plr.Backpack:GetChildren()) do
+				addLog("["..plr.Name.."] → "..item.Name, Color3.fromRGB(255, 255, 140))
+			end
+		end
+	end
+end)
