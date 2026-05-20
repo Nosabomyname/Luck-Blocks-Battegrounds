@@ -58,6 +58,9 @@ local function createButton(parent, text, size, pos, color)
 	b.TextSize = 14
 	b.BorderSizePixel = 0
 	b.Parent = parent
+		local buttonCorner = Instance.new("UICorner")
+		buttonCorner.CornerRadius = UDim.new(0, 6)
+		buttonCorner.Parent = b
 	return b
 end
 
@@ -72,6 +75,22 @@ frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
 frame.Active = true
 frame.Draggable = true
 frame.Parent = gui
+	local frameCorner = Instance.new("UICorner")
+	frameCorner.CornerRadius = UDim.new(0, 8)
+	frameCorner.Parent = frame
+	
+	local closeBtn = createButton(
+		frame,
+		"X",
+		UDim2.new(0,30,0,30),
+		UDim2.new(1,-30,0,0),
+		Color3.fromRGB(200,60,60)
+	)
+	closeBtn.TextSize = 18
+	closeBtn.Font = Enum.Font.GothamBold
+	closeBtn.MouseButton1Click:Connect(function()
+		gui:Destroy()
+	end)
 
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1,0,0,30)
@@ -128,6 +147,9 @@ switchTab(1)
 
 local exploitPage = pages[1]
 
+local collecting = false
+local autoOpening = false
+
 local collectBtn = createButton(
 	exploitPage,
 	"Pegar TODOS os Blocos",
@@ -136,9 +158,15 @@ local collectBtn = createButton(
 	Color3.fromRGB(20,120,20)
 )
 
-local collecting = false
+local autoOpenBtn = createButton(
+	exploitPage,
+	"Auto-Abrir Blocos: OFF",
+	UDim2.new(1,-20,0,35),
+	UDim2.new(0,10,0,50),
+	Color3.fromRGB(200,100,0)
+)
 
-collectBtn.MouseButton1Click:Connect(function()
+local function doCollectBlocks()
 	if collecting then
 		return notify("Já executando.",2)
 	end
@@ -154,7 +182,7 @@ collectBtn.MouseButton1Click:Connect(function()
 	local names = {
 		"LuckyBlock",
 		"SuperBlock",
-		"DiamondBlock",
+		"DiamondBlock",	
 		"RainbowBlock",
 		"GalaxyBlock"
 	}
@@ -177,6 +205,29 @@ collectBtn.MouseButton1Click:Connect(function()
 	collecting = false
 	collectBtn.BackgroundColor3 = Color3.fromRGB(20,120,20)
 	notify("Concluído: "..total,3)
+end
+
+collectBtn.MouseButton1Click:Connect(doCollectBlocks)
+
+autoOpenBtn.MouseButton1Click:Connect(function()
+	autoOpening = not autoOpening
+	if autoOpening then
+		autoOpenBtn.Text = "Auto-Abrir Blocos: ON"
+		autoOpenBtn.BackgroundColor3 = Color3.fromRGB(0,150,0)
+		notify("Auto-Abrir Blocos ATIVADO", 2)
+		
+		-- Start auto-opening loop in a new thread
+		spawn(function()
+			while autoOpening do
+				doCollectBlocks()
+				task.wait(1) -- Wait 1 second before next attempt
+			end
+		end)
+	else
+		autoOpenBtn.Text = "Auto-Abrir Blocos: OFF"
+		autoOpenBtn.BackgroundColor3 = Color3.fromRGB(200,100,0)
+		notify("Auto-Abrir Blocos DESATIVADO", 2)
+	end
 end)
 
 --====================================================
@@ -185,9 +236,19 @@ end)
 
 local tpPage = pages[2]
 
-local scroll = Instance.new("ScrollingFrame")
+local searchBox = Instance.new("TextBox")
+	searchBox.Size = UDim2.new(1,-20,0,30)
+	searchBox.Position = UDim2.new(0,10,0,5)
+	searchBox.PlaceholderText = "Pesquisar jogador..."
+	searchBox.BackgroundColor3 = Color3.fromRGB(60,60,60)
+	searchBox.TextColor3 = Color3.new(1,1,1)
+	searchBox.Font = Enum.Font.Gotham
+	searchBox.TextSize = 14
+	searchBox.Parent = tpPage
+
+	local scroll = Instance.new("ScrollingFrame")
 scroll.Size = UDim2.new(1,-20,1,-10)
-scroll.Position = UDim2.new(0,10,0,5)
+scroll.Position = UDim2.new(0,10,0,40)
 scroll.CanvasSize = UDim2.new()
 scroll.ScrollBarThickness = 4
 scroll.BackgroundColor3 = Color3.fromRGB(50,50,50)
@@ -199,14 +260,16 @@ layout.Parent = scroll
 
 local playerButtons = {}
 
-local function updatePlayers()
+local function updatePlayers(filterText)
+		filterText = filterText or ""
+		filterText = string.lower(filterText)
 	for _,btn in pairs(playerButtons) do
 		btn:Destroy()
 	end
 	table.clear(playerButtons)
 
 	for _,plr in ipairs(Players:GetPlayers()) do
-		if plr ~= lp then
+		if plr ~= lp and string.find(string.lower(plr.Name), filterText) then
 			local b = createButton(
 				scroll,
 				"TP "..plr.Name,
@@ -233,9 +296,15 @@ local function updatePlayers()
 	scroll.CanvasSize = UDim2.new(0,0,0,layout.AbsoluteContentSize.Y + 10)
 end
 
-updatePlayers()
-Players.PlayerAdded:Connect(updatePlayers)
-Players.PlayerRemoving:Connect(updatePlayers)
+updatePlayers(searchBox.Text)
+Players.PlayerAdded:Connect(function() updatePlayers(searchBox.Text) end)
+Players.PlayerRemoving:Connect(function() updatePlayers(searchBox.Text) end)
+
+	searchBox.Changed:Connect(function(prop)
+		if prop == "Text" then
+			updatePlayers(searchBox.Text)
+		end
+	end)
 
 --====================================================
 -- ABA 3: SLOT
