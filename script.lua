@@ -1,3 +1,4 @@
+
 -- Services
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -5,6 +6,7 @@ local Debris = game:GetService("Debris")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
 
 -- Local Player
 local LocalPlayer = Players.LocalPlayer
@@ -12,303 +14,178 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 -- Configurações Globais
 local CONFIG = {
-    THEME_COLOR_PRIMARY = Color3.fromRGB(30, 30, 30), -- Fundo principal
-    THEME_COLOR_SECONDARY = Color3.fromRGB(45, 45, 45), -- Elementos secundários
-    THEME_COLOR_ACCENT = Color3.fromRGB(0, 150, 255), -- Destaque (azul)
-    THEME_COLOR_SUCCESS = Color3.fromRGB(0, 180, 0), -- Sucesso (verde)
-    THEME_COLOR_WARNING = Color3.fromRGB(255, 165, 0), -- Aviso (laranja)
-    THEME_COLOR_ERROR = Color3.fromRGB(200, 60, 60), -- Erro (vermelho)
-    TEXT_COLOR_PRIMARY = Color3.new(1, 1, 1), -- Texto branco
-    TEXT_COLOR_SECONDARY = Color3.fromRGB(180, 180, 180), -- Texto cinza claro
+    THEME_COLOR_PRIMARY = Color3.fromRGB(20, 20, 20), -- Fundo principal (mais escuro)
+    THEME_COLOR_SECONDARY = Color3.fromRGB(35, 35, 35), -- Elementos secundários
+    THEME_COLOR_ACCENT = Color3.fromRGB(0, 150, 255), -- Destaque (azul premium)
+    THEME_COLOR_SUCCESS = Color3.fromRGB(46, 204, 113), -- Sucesso
+    THEME_COLOR_WARNING = Color3.fromRGB(241, 196, 15), -- Aviso
+    THEME_COLOR_ERROR = Color3.fromRGB(231, 76, 60), -- Erro
+    TEXT_COLOR_PRIMARY = Color3.new(1, 1, 1),
+    TEXT_COLOR_SECONDARY = Color3.fromRGB(180, 180, 180),
     FONT = Enum.Font.Gotham,
     FONT_BOLD = Enum.Font.GothamBold,
-    CORNER_RADIUS = UDim.new(0, 8),
-    ANIMATION_TIME = 0.2,
-    MIN_WINDOW_SIZE = Vector2.new(300, 200),
-    MAX_WINDOW_SIZE = Vector2.new(800, 600),
+    CORNER_RADIUS = UDim.new(0, 10),
+    ANIMATION_TIME = 0.3,
+    WINDOW_SIZE = UDim2.new(0, 550, 0, 380)
 }
 
--- Destruir GUIs antigas para evitar conflitos
-for _, gui in ipairs(PlayerGui:GetChildren()) do
-    if gui.Name == "LuckyBlocksGUI" or gui.Name == "LuckyBlocksEnhancedGUI" or gui.Name == "PremiumHUB" then
-        gui:Destroy()
-    end
-end
+-- Anti-Duplicação
+if PlayerGui:FindFirstChild("PremiumHUB") then PlayerGui.PremiumHUB:Destroy() end
 
--- Módulo: Utils (Funções de Utilidade)
+-- Módulo: Utils
 local Utils = {}
 
 function Utils.getCharacter()
-    local char = LocalPlayer.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        return char
-    end
-    return nil
+    return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 end
 
-function Utils.notify(msg, time, color)
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0, 300, 0, 35)
-    label.Position = UDim2.new(0.5, -150, 0, 10)
-    label.BackgroundColor3 = color or CONFIG.THEME_COLOR_SUCCESS
-    label.TextColor3 = CONFIG.TEXT_COLOR_PRIMARY
-    label.Text = msg
-    label.Font = CONFIG.FONT
-    label.TextSize = 14
-    label.BorderSizePixel = 0
-    label.ZIndex = 100 -- Sempre acima de outros elementos
-    label.Parent = PlayerGui
+function Utils.notify(title, msg, time, color)
+    local notifyFrame = Instance.new("Frame")
+    notifyFrame.Size = UDim2.new(0, 250, 0, 60)
+    notifyFrame.Position = UDim2.new(1, 10, 1, -70)
+    notifyFrame.BackgroundColor3 = CONFIG.THEME_COLOR_SECONDARY
+    notifyFrame.BorderSizePixel = 0
+    notifyFrame.Parent = PlayerGui:FindFirstChild("PremiumHUB") or PlayerGui
 
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = CONFIG.CORNER_RADIUS
-    corner.Parent = label
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = notifyFrame
 
-    Debris:AddItem(label, time or 3)
+    local accent = Instance.new("Frame")
+    accent.Size = UDim2.new(0, 4, 1, 0)
+    accent.BackgroundColor3 = color or CONFIG.THEME_COLOR_ACCENT
+    accent.Parent = notifyFrame
+    Instance.new("UICorner", accent).CornerRadius = UDim.new(0, 8)
+
+    local t = Instance.new("TextLabel")
+    t.Size = UDim2.new(1, -20, 0, 20)
+    t.Position = UDim2.new(0, 12, 0, 8)
+    t.Text = title
+    t.Font = CONFIG.FONT_BOLD
+    t.TextSize = 14
+    t.TextColor3 = color or CONFIG.THEME_COLOR_ACCENT
+    t.BackgroundTransparency = 1
+    t.TextXAlignment = Enum.TextXAlignment.Left
+    t.Parent = notifyFrame
+
+    local m = Instance.new("TextLabel")
+    m.Size = UDim2.new(1, -20, 0, 20)
+    m.Position = UDim2.new(0, 12, 0, 28)
+    m.Text = msg
+    m.Font = CONFIG.FONT
+    m.TextSize = 12
+    m.TextColor3 = CONFIG.TEXT_COLOR_PRIMARY
+    m.BackgroundTransparency = 1
+    m.TextXAlignment = Enum.TextXAlignment.Left
+    m.Parent = notifyFrame
+
+    TweenService:Create(notifyFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(1, -260, 1, -70)}):Play()
+    task.delay(time or 3, function()
+        TweenService:Create(notifyFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Position = UDim2.new(1, 10, 1, -70)}):Play()
+        task.wait(0.5)
+        notifyFrame:Destroy()
+    end)
 end
 
-function Utils.createButton(parent, text, size, pos, color, textColor, font, textSize)
+function Utils.createButton(parent, text, size, pos, color)
     local b = Instance.new("TextButton")
-    b.Size = size
-    b.Position = pos
-    b.Text = text
+    b.Size = size or UDim2.new(1, -10, 0, 35)
+    b.Position = pos or UDim2.new()
     b.BackgroundColor3 = color or CONFIG.THEME_COLOR_SECONDARY
-    b.TextColor3 = textColor or CONFIG.TEXT_COLOR_PRIMARY
-    b.Font = font or CONFIG.FONT
-    b.TextSize = textSize or 14
-    b.BorderSizePixel = 0
-    b.Parent = parent
+    b.Text = text
+    b.Font = CONFIG.FONT
+    b.TextSize = 14
+    b.TextColor3 = CONFIG.TEXT_COLOR_PRIMARY
     b.AutoButtonColor = false
+    b.Parent = parent
 
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = CONFIG.CORNER_RADIUS
-    corner.Parent = b
+    local corner = Instance.new("UICorner", b)
+    corner.CornerRadius = UDim.new(0, 6)
 
     b.MouseEnter:Connect(function()
-        TweenService:Create(b, TweenInfo.new(CONFIG.ANIMATION_TIME), {BackgroundColor3 = b.BackgroundColor3:Lerp(Color3.new(1,1,1), 0.2)}):Play()
+        TweenService:Create(b, TweenInfo.new(0.2), {BackgroundColor3 = b.BackgroundColor3:Lerp(Color3.new(1,1,1), 0.1)}):Play()
     end)
     b.MouseLeave:Connect(function()
-        TweenService:Create(b, TweenInfo.new(CONFIG.ANIMATION_TIME), {BackgroundColor3 = color or CONFIG.THEME_COLOR_SECONDARY}):Play()
+        TweenService:Create(b, TweenInfo.new(0.2), {BackgroundColor3 = color or CONFIG.THEME_COLOR_SECONDARY}):Play()
     end)
 
     return b
 end
 
-function Utils.createFrame(parent, size, pos, color, cornerRadius)
+function Utils.createToggle(parent, text, default, callback)
     local frame = Instance.new("Frame")
-    frame.Size = size
-    frame.Position = pos
-    frame.BackgroundColor3 = color or CONFIG.THEME_COLOR_SECONDARY
+    frame.Size = UDim2.new(1, -10, 0, 35)
+    frame.BackgroundTransparency = 1
     frame.Parent = parent
 
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = cornerRadius or CONFIG.CORNER_RADIUS
-    corner.Parent = frame
-
-    return frame
-end
-
-function Utils.createLabel(parent, text, size, pos, textColor, font, textSize, textXAlignment)
     local label = Instance.new("TextLabel")
-    label.Size = size
-    label.Position = pos
-    label.BackgroundTransparency = 1
+    label.Size = UDim2.new(1, -50, 1, 0)
     label.Text = text
-    label.TextColor3 = textColor or CONFIG.TEXT_COLOR_PRIMARY
-    label.Font = font or CONFIG.FONT
-    label.TextSize = textSize or 14
-    label.TextXAlignment = textXAlignment or Enum.TextXAlignment.Left
-    label.Parent = parent
-    return label
-end
+    label.Font = CONFIG.FONT
+    label.TextSize = 14
+    label.TextColor3 = CONFIG.TEXT_COLOR_PRIMARY
+    label.BackgroundTransparency = 1
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = frame
 
-function Utils.createTextBox(parent, placeholder, size, pos, color, textColor, font, textSize)
-    local textBox = Instance.new("TextBox")
-    textBox.Size = size
-    textBox.Position = pos
-    textBox.PlaceholderText = placeholder
-    textBox.BackgroundColor3 = color or CONFIG.THEME_COLOR_SECONDARY
-    textBox.TextColor3 = textColor or CONFIG.TEXT_COLOR_PRIMARY
-    textBox.Font = font or CONFIG.FONT
-    textBox.TextSize = textSize or 14
-    textBox.BorderSizePixel = 0
-    textBox.Parent = parent
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 40, 0, 20)
+    btn.Position = UDim2.new(1, -40, 0.5, -10)
+    btn.BackgroundColor3 = default and CONFIG.THEME_COLOR_ACCENT or CONFIG.THEME_COLOR_SECONDARY
+    btn.Text = ""
+    btn.Parent = frame
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(1, 0)
 
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = CONFIG.CORNER_RADIUS
-    corner.Parent = textBox
+    local circle = Instance.new("Frame")
+    circle.Size = UDim2.new(0, 16, 0, 16)
+    circle.Position = default and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+    circle.BackgroundColor3 = Color3.new(1, 1, 1)
+    circle.Parent = btn
+    Instance.new("UICorner", circle).CornerRadius = UDim.new(1, 0)
 
-    return textBox
-end
-
--- Módulo: Core (Gerenciamento da Janela Principal e Abas)
-local Core = {}
-Core.MainGui = Instance.new("ScreenGui")
-Core.MainGui.Name = "PremiumHUB"
-Core.MainGui.ResetOnSpawn = false
-Core.MainGui.Parent = PlayerGui
-
-Core.Window = nil
-Core.Header = nil
-Core.TabsFrame = nil
-Core.PagesFrame = nil
-
-Core.tabs = {}
-Core.pages = {}
-Core.activeTab = nil
-
-function Core.init()
-    local initialPosition = UDim2.new(0.5, -250, 0.5, -175)
-    Core.Window = Utils.createFrame(Core.MainGui, UDim2.new(0, 500, 0, 350), initialPosition, CONFIG.THEME_COLOR_PRIMARY, CONFIG.CORNER_RADIUS)
-    Core.Window.Name = "MainWindow"
-    Core.Window.Active = true
-
-    local shadow = Instance.new("UIStroke")
-    shadow.Color = Color3.fromRGB(0,0,0)
-    shadow.Transparency = 0.7
-    shadow.Thickness = 2
-    shadow.Parent = Core.Window
-
-    Core.Header = Utils.createFrame(Core.Window, UDim2.new(1, 0, 0, 30), UDim2.new(0, 0, 0, 0), CONFIG.THEME_COLOR_SECONDARY, UDim.new(0,0))
-    Core.Header.Name = "Header"
-    Core.Header.ClipsDescendants = true
-
-    local headerCorner = Instance.new("UICorner")
-    headerCorner.CornerRadius = CONFIG.CORNER_RADIUS
-    headerCorner.Parent = Core.Header
-
-    Utils.createLabel(Core.Header, "Premium HUB", UDim2.new(1, -90, 1, 0), UDim2.new(0, 10, 0, 0), CONFIG.TEXT_COLOR_PRIMARY, CONFIG.FONT_BOLD, 16, Enum.TextXAlignment.Left)
-
-    local closeBtn = Utils.createButton(Core.Header, "X", UDim2.new(0, 30, 1, 0), UDim2.new(1, -30, 0, 0), CONFIG.THEME_COLOR_ERROR, CONFIG.TEXT_COLOR_PRIMARY, CONFIG.FONT_BOLD, 18)
-    closeBtn.MouseButton1Click:Connect(function()
-        Core.hideWindow()
-    end)
-
-    local minimizeBtn = Utils.createButton(Core.Header, "_", UDim2.new(0, 30, 1, 0), UDim2.new(1, -60, 0, 0), CONFIG.THEME_COLOR_SECONDARY, CONFIG.TEXT_COLOR_PRIMARY, CONFIG.FONT_BOLD, 18)
-    minimizeBtn.MouseButton1Click:Connect(function()
-        Core.minimizeWindow()
-    end)
-
-    Core.TabsFrame = Utils.createFrame(Core.Window, UDim2.new(0, 100, 1, -30), UDim2.new(0, 0, 0, 30), CONFIG.THEME_COLOR_SECONDARY, UDim.new(0,0))
-    local tabsLayout = Instance.new("UIListLayout")
-    tabsLayout.Padding = UDim.new(0, 5)
-    tabsLayout.Parent = Core.TabsFrame
-
-    Core.PagesFrame = Utils.createFrame(Core.Window, UDim2.new(1, -110, 1, -40), UDim2.new(0, 105, 0, 35), CONFIG.THEME_COLOR_SECONDARY, CONFIG.CORNER_RADIUS)
-    Core.PagesFrame.ClipsDescendants = true
-
-    Core.setupWindowControls()
-end
-
-function Core.addTab(name, contentCallback)
-    local tabButton = Utils.createButton(Core.TabsFrame, name, UDim2.new(1, -10, 0, 30), UDim2.new(), CONFIG.THEME_COLOR_SECONDARY)
-    local pageFrame = Utils.createFrame(Core.PagesFrame, UDim2.new(1, 0, 1, 0), UDim2.new(0, 0, 0, 0), CONFIG.THEME_COLOR_SECONDARY, CONFIG.CORNER_RADIUS)
-    pageFrame.Visible = false
-
-    Core.tabs[name] = tabButton
-    Core.pages[name] = pageFrame
-
-    tabButton.MouseButton1Click:Connect(function()
-        Core.switchTab(name)
-    end)
-
-    if contentCallback then contentCallback(pageFrame) end
-end
-
-function Core.switchTab(name)
-    if Core.activeTab == name then return end
-    for tabName, page in pairs(Core.pages) do
-        page.Visible = (tabName == name)
-        local button = Core.tabs[tabName]
-        if button then
-            TweenService:Create(button, TweenInfo.new(CONFIG.ANIMATION_TIME), {BackgroundColor3 = (tabName == name) and CONFIG.THEME_COLOR_ACCENT or CONFIG.THEME_COLOR_SECONDARY}):Play()
-        end
-    end
-    Core.activeTab = name
-end
-
-function Core.hideWindow()
-    TweenService:Create(Core.Window, TweenInfo.new(CONFIG.ANIMATION_TIME), {Size = UDim2.new(0, 0, 0, 0), Position = UDim2.new(0.5, 0, 0.5, 0)}):Play()
-    task.wait(CONFIG.ANIMATION_TIME)
-    Core.MainGui.Enabled = false
-end
-
-function Core.showWindow()
-    Core.MainGui.Enabled = true
-    Core.Window.Size = UDim2.new(0, 0, 0, 0)
-    Core.Window.Position = UDim2.new(0.5, 0, 0.5, 0)
-    TweenService:Create(Core.Window, TweenInfo.new(CONFIG.ANIMATION_TIME), {Size = UDim2.new(0, 500, 0, 350), Position = UDim2.new(0.5, -250, 0.5, -175)}):Play()
-end
-
-function Core.minimizeWindow()
-    Core.TabsFrame.Visible = false
-    Core.PagesFrame.Visible = false
-    TweenService:Create(Core.Window, TweenInfo.new(CONFIG.ANIMATION_TIME), {Size = UDim2.new(0, 150, 0, 30), Position = UDim2.new(1, -160, 1, -40)}):Play()
-end
-
-function Core.restoreWindow()
-    Core.TabsFrame.Visible = true
-    Core.PagesFrame.Visible = true
-    TweenService:Create(Core.Window, TweenInfo.new(CONFIG.ANIMATION_TIME), {Size = UDim2.new(0, 500, 0, 350), Position = UDim2.new(0.5, -250, 0.5, -175)}):Play()
-end
-
-function Core.setupWindowControls()
-    local dragging, dragInput, dragStart, startPos
-    Core.Header.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = Core.Window.Position
-        end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local delta = input.Position - dragStart
-            local newPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-            
-            local screenX = UserInputService.ViewportSize.X
-            local screenY = UserInputService.ViewportSize.Y
-            local winX = Core.Window.Size.X.Offset
-            local winY = Core.Window.Size.Y.Offset
-            
-            local clampedX = math.clamp(newPos.X.Offset, 0, screenX - winX)
-            local clampedY = math.clamp(newPos.Y.Offset, 0, screenY - winY)
-            Core.Window.Position = UDim2.new(0, clampedX, 0, clampedY)
-        end
-    end)
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
-        end
+    local state = default
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = state and CONFIG.THEME_COLOR_ACCENT or CONFIG.THEME_COLOR_SECONDARY}):Play()
+        TweenService:Create(circle, TweenInfo.new(0.2), {Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)}):Play()
+        callback(state)
     end)
 end
 
--- Módulo: PlayerManager (Gerenciamento de Jogadores)
+-- Módulo: PlayerManager
 local PlayerManager = {}
 PlayerManager.selectedPlayers = {}
 PlayerManager.playerButtons = {}
 
-function PlayerManager.init(parentFrame)
-    local listFrame = Utils.createFrame(parentFrame, UDim2.new(1, -20, 1, -60), UDim2.new(0, 10, 0, 10), CONFIG.THEME_COLOR_PRIMARY)
-    local searchBox = Utils.createTextBox(parentFrame, "Pesquisar jogador...", UDim2.new(1, -20, 0, 30), UDim2.new(0, 10, 1, -40))
-    
+function PlayerManager.init(parent)
+    local search = Instance.new("TextBox")
+    search.Size = UDim2.new(1, -20, 0, 30)
+    search.Position = UDim2.new(0, 10, 0, 10)
+    search.BackgroundColor3 = CONFIG.THEME_COLOR_PRIMARY
+    search.PlaceholderText = "Pesquisar jogador..."
+    search.Text = ""
+    search.Font = CONFIG.FONT
+    search.TextColor3 = CONFIG.TEXT_COLOR_PRIMARY
+    search.Parent = parent
+    Instance.new("UICorner", search)
+
     local scroll = Instance.new("ScrollingFrame")
-    scroll.Size = UDim2.new(1, -10, 1, -10)
-    scroll.Position = UDim2.new(0, 5, 0, 5)
+    scroll.Size = UDim2.new(1, -20, 1, -50)
+    scroll.Position = UDim2.new(0, 10, 0, 45)
     scroll.BackgroundTransparency = 1
-    scroll.ScrollBarThickness = 4
-    scroll.Parent = listFrame
+    scroll.ScrollBarThickness = 2
+    scroll.Parent = parent
 
-    local layout = Instance.new("UIListLayout")
+    local layout = Instance.new("UIListLayout", scroll)
     layout.Padding = UDim.new(0, 5)
-    layout.Parent = scroll
 
-    local function updateList()
+    local function update()
         for _, v in pairs(PlayerManager.playerButtons) do v:Destroy() end
         table.clear(PlayerManager.playerButtons)
         
         for _, plr in ipairs(Players:GetPlayers()) do
-            if plr.Name:lower():find(searchBox.Text:lower()) or plr.DisplayName:lower():find(searchBox.Text:lower()) then
-                local btn = Utils.createButton(scroll, plr.DisplayName .. " (@" .. plr.Name .. ")", UDim2.new(1, -10, 0, 30), UDim2.new(), CONFIG.THEME_COLOR_SECONDARY)
+            if plr.Name:lower():find(search.Text:lower()) or plr.DisplayName:lower():find(search.Text:lower()) then
+                local btn = Utils.createButton(scroll, plr.DisplayName .. " (@" .. plr.Name .. ")")
                 PlayerManager.playerButtons[plr.UserId] = btn
                 
                 if table.find(PlayerManager.selectedPlayers, plr) then
@@ -319,10 +196,10 @@ function PlayerManager.init(parentFrame)
                     local index = table.find(PlayerManager.selectedPlayers, plr)
                     if index then
                         table.remove(PlayerManager.selectedPlayers, index)
-                        TweenService:Create(btn, TweenInfo.new(CONFIG.ANIMATION_TIME), {BackgroundColor3 = CONFIG.THEME_COLOR_SECONDARY}):Play()
+                        btn.BackgroundColor3 = CONFIG.THEME_COLOR_SECONDARY
                     else
                         table.insert(PlayerManager.selectedPlayers, plr)
-                        TweenService:Create(btn, TweenInfo.new(CONFIG.ANIMATION_TIME), {BackgroundColor3 = CONFIG.THEME_COLOR_ACCENT}):Play()
+                        btn.BackgroundColor3 = CONFIG.THEME_COLOR_ACCENT
                     end
                 end)
             end
@@ -330,103 +207,219 @@ function PlayerManager.init(parentFrame)
         scroll.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 10)
     end
 
-    searchBox:GetPropertyChangedSignal("Text"):Connect(updateList)
-    Players.PlayerAdded:Connect(updateList)
-    Players.PlayerRemoving:Connect(updateList)
-    updateList()
+    search:GetPropertyChangedSignal("Text"):Connect(update)
+    Players.PlayerAdded:Connect(update)
+    Players.PlayerRemoving:Connect(update)
+    update()
 end
 
-function PlayerManager.getSelectedPlayers()
-    return PlayerManager.selectedPlayers
-end
+-- Módulo: Core
+local Core = {}
+function Core.init()
+    local gui = Instance.new("ScreenGui", PlayerGui)
+    gui.Name = "PremiumHUB"
+    gui.ResetOnSpawn = false
 
-function PlayerManager.clearSelectedPlayers()
-    table.clear(PlayerManager.selectedPlayers)
-    for _, btn in pairs(PlayerManager.playerButtons) do
-        btn.BackgroundColor3 = CONFIG.THEME_COLOR_SECONDARY
+    local win = Instance.new("Frame", gui)
+    win.Size = CONFIG.WINDOW_SIZE
+    win.Position = UDim2.new(0.5, -275, 0.5, -190)
+    win.BackgroundColor3 = CONFIG.THEME_COLOR_PRIMARY
+    win.ClipsDescendants = true
+    Instance.new("UICorner", win).CornerRadius = CONFIG.CORNER_RADIUS
+    Core.Window = win
+
+    local header = Instance.new("Frame", win)
+    header.Size = UDim2.new(1, 0, 0, 40)
+    header.BackgroundColor3 = CONFIG.THEME_COLOR_SECONDARY
+    
+    local title = Instance.new("TextLabel", header)
+    title.Size = UDim2.new(1, -120, 1, 0)
+    title.Position = UDim2.new(0, 15, 0, 0)
+    title.Text = "PREMIUM HUB"
+    title.Font = CONFIG.FONT_BOLD
+    title.TextSize = 18
+    title.TextColor3 = CONFIG.TEXT_COLOR_PRIMARY
+    title.BackgroundTransparency = 1
+    title.TextXAlignment = Enum.TextXAlignment.Left
+
+    local close = Utils.createButton(header, "X", UDim2.new(0, 30, 0, 30), UDim2.new(1, -40, 0.5, -15), CONFIG.THEME_COLOR_ERROR)
+    close.MouseButton1Click:Connect(function() gui:Destroy() end)
+
+    local min = Utils.createButton(header, "-", UDim2.new(0, 30, 0, 30), UDim2.new(1, -75, 0.5, -15))
+    local minimized = false
+    min.MouseButton1Click:Connect(function()
+        minimized = not minimized
+        TweenService:Create(win, TweenInfo.new(0.3), {Size = minimized and UDim2.new(0, 150, 0, 40) or CONFIG.WINDOW_SIZE}):Play()
+    end)
+
+    local sidebar = Instance.new("Frame", win)
+    sidebar.Size = UDim2.new(0, 120, 1, -40)
+    sidebar.Position = UDim2.new(0, 0, 0, 40)
+    sidebar.BackgroundColor3 = CONFIG.THEME_COLOR_SECONDARY
+    
+    local sideLayout = Instance.new("UIListLayout", sidebar)
+    sideLayout.Padding = UDim.new(0, 2)
+    sideLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+    local container = Instance.new("Frame", win)
+    container.Size = UDim2.new(1, -130, 1, -50)
+    container.Position = UDim2.new(0, 125, 0, 45)
+    container.BackgroundTransparency = 1
+    Core.Container = container
+
+    -- Dragging
+    local dragging, dragInput, dragStart, startPos
+    header.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = win.Position
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            win.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+    end)
+
+    Core.Tabs = {}
+    function Core.addTab(name, callback)
+        local btn = Utils.createButton(sidebar, name, UDim2.new(0.9, 0, 0, 35))
+        local page = Instance.new("ScrollingFrame", container)
+        page.Size = UDim2.new(1, 0, 1, 0)
+        page.BackgroundTransparency = 1
+        page.Visible = false
+        page.ScrollBarThickness = 2
+        Instance.new("UIListLayout", page).Padding = UDim.new(0, 8)
+
+        btn.MouseButton1Click:Connect(function()
+            for _, p in pairs(Core.Tabs) do p.Visible = false end
+            page.Visible = true
+            for _, b in ipairs(sidebar:GetChildren()) do
+                if b:IsA("TextButton") then b.BackgroundColor3 = CONFIG.THEME_COLOR_SECONDARY end
+            end
+            btn.BackgroundColor3 = CONFIG.THEME_COLOR_ACCENT
+        end)
+        Core.Tabs[name] = page
+        callback(page)
     end
 end
 
--- Módulo: Exploits (Funcionalidades de Exploit)
-local Exploits = {}
-Exploits.blockNames = {"LuckyBlock", "SuperBlock", "DiamondBlock", "RainbowBlock", "GalaxyBlock", "GlitchBlock"}
-Exploits.collecting = false
-Exploits.autoOpening = false
+-- Funcionalidades
+Core.init()
 
-function Exploits.init(parentFrame)
-    local collectBtn = Utils.createButton(parentFrame, "Pegar TODOS os Blocos", UDim2.new(1, -20, 0, 40), UDim2.new(0, 10, 0, 10), CONFIG.THEME_COLOR_SUCCESS)
-    collectBtn.MouseButton1Click:Connect(function()
-        Exploits.doCollectBlocks()
+-- ABA: MAIN
+Core.addTab("Main", function(page)
+    Utils.createLabel(page, "Bem-vindo ao Lucky Blocks Ultimate!", UDim2.new(1, 0, 0, 30), nil, CONFIG.TEXT_COLOR_ACCENT, CONFIG.FONT_BOLD, 16)
+    Utils.createLabel(page, "Selecione uma aba para começar.", UDim2.new(1, 0, 0, 20))
+end)
+
+-- ABA: EXPLOITS
+Core.addTab("Exploits", function(page)
+    local blocks = {"LuckyBlock", "SuperBlock", "DiamondBlock", "RainbowBlock", "GalaxyBlock", "GlitchBlock"}
+    
+    Utils.createButton(page, "Coletar Todos os Blocos", nil, nil, CONFIG.THEME_COLOR_SUCCESS).MouseButton1Click:Connect(function()
+        for _, b in ipairs(blocks) do
+            local r = ReplicatedStorage:FindFirstChild("Spawn" .. b)
+            if r then r:FireServer() end
+        end
+        Utils.notify("Exploits", "Blocos coletados com sucesso!", 2, CONFIG.THEME_COLOR_SUCCESS)
     end)
 
-    local autoOpenBtn = Utils.createButton(parentFrame, "Auto-Abrir: OFF", UDim2.new(1, -20, 0, 40), UDim2.new(0, 10, 0, 60), CONFIG.THEME_COLOR_WARNING)
-    autoOpenBtn.MouseButton1Click:Connect(function()
-        Exploits.autoOpening = not Exploits.autoOpening
-        autoOpenBtn.Text = "Auto-Abrir: " .. (Exploits.autoOpening and "ON" or "OFF")
-        autoOpenBtn.BackgroundColor3 = Exploits.autoOpening and CONFIG.THEME_COLOR_SUCCESS or CONFIG.THEME_COLOR_WARNING
-        
+    Utils.createToggle(page, "Auto Coletar (Loop)", false, function(state)
+        _G.AutoCollect = state
         task.spawn(function()
-            while Exploits.autoOpening do
-                Exploits.doCollectBlocks()
-                task.wait(1)
+            while _G.AutoCollect do
+                for _, b in ipairs(blocks) do
+                    local r = ReplicatedStorage:FindFirstChild("Spawn" .. b)
+                    if r then r:FireServer() end
+                end
+                task.wait(0.5)
             end
         end)
     end)
-end
 
-function Exploits.doCollectBlocks()
-    for _, name in ipairs(Exploits.blockNames) do
-        local remote = ReplicatedStorage:FindFirstChild("Spawn" .. name)
-        if remote then remote:FireServer() end
-    end
-end
+    Utils.createLabel(page, "Gerenciamento de Itens", UDim2.new(1, 0, 0, 30), nil, CONFIG.TEXT_COLOR_ACCENT, CONFIG.FONT_BOLD, 14)
+    local itemScroll = Instance.new("ScrollingFrame", page)
+    itemScroll.Size = UDim2.new(1, 0, 0, 120)
+    itemScroll.BackgroundTransparency = 0.8
+    itemScroll.BackgroundColor3 = Color3.new(0,0,0)
+    itemScroll.ScrollBarThickness = 2
+    local itemLayout = Instance.new("UIListLayout", itemScroll)
 
--- Módulo: Teleport
-local Teleport = {}
-function Teleport.init(parentFrame)
-    local tpBtn = Utils.createButton(parentFrame, "Teleportar para Selecionados", UDim2.new(1, -20, 0, 40), UDim2.new(0, 10, 0, 10), CONFIG.THEME_COLOR_ACCENT)
-    tpBtn.MouseButton1Click:Connect(function()
-        local selected = PlayerManager.getSelectedPlayers()
-        local char = Utils.getCharacter()
-        if char and #selected > 0 then
-            local target = selected[1].Character
-            if target and target:FindFirstChild("HumanoidRootPart") then
-                char:MoveTo(target.HumanoidRootPart.Position)
+    local function scan()
+        for _, v in ipairs(itemScroll:GetChildren()) do if v:IsA("TextLabel") then v:Destroy() end end
+        local char = LocalPlayer.Character
+        if char then
+            for _, tool in ipairs(char:GetChildren()) do
+                if tool:IsA("Tool") then
+                    local l = Utils.createLabel(itemScroll, "[Equipado] " .. tool.Name, UDim2.new(1, 0, 0, 20))
+                    l.TextSize = 10
+                end
             end
         end
-    end)
-end
+        for _, tool in ipairs(LocalPlayer.Backpack:GetChildren()) do
+            local l = Utils.createLabel(itemScroll, "[Mochila] " .. tool.Name, UDim2.new(1, 0, 0, 20))
+            l.TextSize = 10
+        end
+        itemScroll.CanvasSize = UDim2.new(0, 0, 0, itemLayout.AbsoluteContentSize.Y)
+    end
+    Utils.createButton(page, "Escanear Itens").MouseButton1Click:Connect(scan)
+end)
 
--- Módulo: Trolls
-local Trolls = {}
-function Trolls.init(parentFrame)
-    local freezeBtn = Utils.createButton(parentFrame, "Congelar Selecionados", UDim2.new(1, -20, 0, 40), UDim2.new(0, 10, 0, 10), CONFIG.THEME_COLOR_ACCENT)
-    freezeBtn.MouseButton1Click:Connect(function()
-        for _, plr in ipairs(PlayerManager.getSelectedPlayers()) do
+-- ABA: TROLLS
+Core.addTab("Trolls", function(page)
+    Utils.createButton(page, "Congelar Selecionados", nil, nil, CONFIG.THEME_COLOR_ACCENT).MouseButton1Click:Connect(function()
+        for _, plr in ipairs(PlayerManager.selectedPlayers) do
             if plr.Character and plr.Character:FindFirstChild("Humanoid") then
                 plr.Character.Humanoid.WalkSpeed = 0
+                plr.Character.Humanoid.JumpPower = 0
             end
         end
+        Utils.notify("Trolls", "Jogadores congelados!", 2)
     end)
 
-    local unfreezeBtn = Utils.createButton(parentFrame, "Descongelar Selecionados", UDim2.new(1, -20, 0, 40), UDim2.new(0, 10, 0, 60), CONFIG.THEME_COLOR_SUCCESS)
-    unfreezeBtn.MouseButton1Click:Connect(function()
-        for _, plr in ipairs(PlayerManager.getSelectedPlayers()) do
+    Utils.createButton(page, "Descongelar Selecionados", nil, nil, CONFIG.THEME_COLOR_SUCCESS).MouseButton1Click:Connect(function()
+        for _, plr in ipairs(PlayerManager.selectedPlayers) do
             if plr.Character and plr.Character:FindFirstChild("Humanoid") then
                 plr.Character.Humanoid.WalkSpeed = 16
+                plr.Character.Humanoid.JumpPower = 50
+            end
+        end
+        Utils.notify("Trolls", "Jogadores descongelados!", 2)
+    end)
+
+    Utils.createLabel(page, "Controle Customizado", UDim2.new(1, 0, 0, 20), nil, CONFIG.TEXT_COLOR_ACCENT)
+    local speedBox = Utils.createTextBox(page, "Velocidade (16)", UDim2.new(1, 0, 0, 30))
+    Utils.createButton(page, "Aplicar Velocidade").MouseButton1Click:Connect(function()
+        local s = tonumber(speedBox.Text) or 16
+        for _, plr in ipairs(PlayerManager.selectedPlayers) do
+            if plr.Character and plr.Character:FindFirstChild("Humanoid") then plr.Character.Humanoid.WalkSpeed = s end
+        end
+    end)
+end)
+
+-- ABA: TELEPORT
+Core.addTab("Teleport", function(page)
+    Utils.createButton(page, "Ir para Jogador Selecionado").MouseButton1Click:Connect(function()
+        if #PlayerManager.selectedPlayers > 0 then
+            local target = PlayerManager.selectedPlayers[1].Character
+            if target and target:FindFirstChild("HumanoidRootPart") then
+                Utils.getCharacter().HumanoidRootPart.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 3, 0)
             end
         end
     end)
-end
+end)
 
--- Main Tab
-Core.init()
-Core.addTab("Main", function(p) Utils.createLabel(p, "Bem-vindo ao Premium HUB!", UDim2.new(1, 0, 0, 20), UDim2.new(0, 10, 0, 10)) end)
-Core.addTab("Exploits", Exploits.init)
-Core.addTab("Trolls", Trolls.init)
-Core.addTab("Teleport", Teleport.init)
-Core.addTab("Player", PlayerManager.init)
+-- ABA: PLAYER
+Core.addTab("Player", function(page)
+    PlayerManager.init(page)
+end)
 
-Core.switchTab("Main")
-Core.showWindow()
-
+-- Finalização
+Core.Tabs["Main"].Visible = true
+Utils.notify("Premium HUB", "Carregado com sucesso!", 3, CONFIG.THEME_COLOR_SUCCESS)
