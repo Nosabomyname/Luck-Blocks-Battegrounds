@@ -37,7 +37,8 @@ local CONFIG = {
     FONT = Enum.Font.Gotham,
     FONT_BOLD = Enum.Font.GothamBold,
     WINDOW_SIZE = UDim2.new(0, 580, 0, 400),
-    ANIM_SPEED = 0.3
+    ANIM_SPEED = 0.3,
+    CORNER_RADIUS = UDim.new(0, 8) -- Adicionado: Valor padrão para o raio do canto
 }
 
 -- ANTI-DUPLICATION
@@ -157,6 +158,21 @@ function Utils.createTextBox(parent, placeholder, callback)
     return box
 end
 
+-- Adicionado: Implementação de Utils.createLabel
+function Utils.createLabel(parent, text, size, position, textColor, font, textSize, textXAlignment)
+    local label = Instance.new("TextLabel")
+    label.Parent = parent
+    label.Text = text
+    label.Size = size or UDim2.new(1, 0, 0, 20) -- Tamanho padrão se não fornecido
+    label.Position = position or UDim2.new(0, 0, 0, 0) -- Posição padrão se não fornecida
+    label.TextColor3 = textColor or CONFIG.TEXT_PRIMARY
+    label.Font = font or CONFIG.FONT
+    label.TextSize = textSize or 14
+    label.BackgroundTransparency = 1
+    label.TextXAlignment = textXAlignment or Enum.TextXAlignment.Left
+    return label
+end
+
 -- MODULE: PLAYER MANAGER
 local PlayerManager = {selected = {}, buttons = {}}
 function PlayerManager.init(parent)
@@ -167,6 +183,10 @@ function PlayerManager.init(parent)
     scroll.ScrollBarThickness = 2
     local layout = Instance.new("UIListLayout", scroll)
     layout.Padding = UDim.new(0, 5)
+    layout.FillDirection = Enum.FillDirection.Vertical
+    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    layout.VerticalAlignment = Enum.VerticalAlignment.Top
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
     
     local function update()
         for _, v in pairs(PlayerManager.buttons) do v:Destroy() end
@@ -183,7 +203,8 @@ function PlayerManager.init(parent)
                 PlayerManager.buttons[plr.UserId] = btn
             end
         end
-        scroll.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 10)
+        -- Ajuste do CanvasSize para ScrollingFrame
+        scroll.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + layout.Padding.Offset * 2)
     end
     search:GetPropertyChangedSignal("Text"):Connect(update)
     Players.PlayerAdded:Connect(update)
@@ -208,7 +229,9 @@ function Core.init()
     local header = Instance.new("Frame", main)
     header.Size = UDim2.new(1, 0, 0, 45)
     header.BackgroundColor3 = CONFIG.THEME_SECONDARY
-    Instance.new("UICorner", header).CornerRadius = CONFIG.CORNER_RADIUS
+    -- O UICorner do header deve ter o mesmo CornerRadius do main para um visual consistente
+    local headerCorner = Instance.new("UICorner", header)
+    headerCorner.CornerRadius = CONFIG.CORNER_RADIUS
     
     local title = Instance.new("TextLabel", header)
     title.Size = UDim2.new(1, -150, 1, 0)
@@ -226,7 +249,7 @@ function Core.init()
     
     local min = Utils.createButton(header, "-", function()
         local minimized = main.Size.Y.Offset < 100
-        TweenService:Create(main, TweenInfo.new(0.3), {Size = minimized and CONFIG.WINDOW_SIZE or UDim2.new(0, 200, 0, 45)}):Play()
+        TweenService:Create(main, TweenInfo.new(0.3), {Size = minimized and CONFIG.WINDOW_SIZE or UDim2.new(0, CONFIG.WINDOW_SIZE.X.Offset, 0, 45)}):Play()
     end)
     min.Size = UDim2.new(0, 35, 0, 35)
     min.Position = UDim2.new(1, -85, 0.5, -17)
@@ -237,6 +260,10 @@ function Core.init()
     sidebar.BackgroundTransparency = 1
     local sideLayout = Instance.new("UIListLayout", sidebar)
     sideLayout.Padding = UDim.new(0, 5)
+    sideLayout.FillDirection = Enum.FillDirection.Vertical
+    sideLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    sideLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+    sideLayout.SortOrder = Enum.SortOrder.LayoutOrder
     
     local container = Instance.new("Frame", main)
     container.Size = UDim2.new(1, -170, 1, -65)
@@ -269,7 +296,12 @@ function Core.init()
         page.BackgroundTransparency = 1
         page.Visible = false
         page.ScrollBarThickness = 2
-        Instance.new("UIListLayout", page).Padding = UDim.new(0, 10)
+        local pageLayout = Instance.new("UIListLayout", page)
+        pageLayout.Padding = UDim.new(0, 10)
+        pageLayout.FillDirection = Enum.FillDirection.Vertical
+        pageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        pageLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+        pageLayout.SortOrder = Enum.SortOrder.LayoutOrder
         
         Core.Tabs[name] = btn
         Core.Pages[name] = page
@@ -318,9 +350,13 @@ Core.addTab("Exploits", function(page)
     itemScroll.Size = UDim2.new(1, 0, 0, 150)
     itemScroll.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
     itemScroll.BorderSizePixel = 0
-    Instance.new("UICorner", itemScroll)
+    Instance.new("UICorner", itemScroll).CornerRadius = CONFIG.CORNER_RADIUS -- Adicionado: UICorner para itemScroll
     local itemLayout = Instance.new("UIListLayout", itemScroll)
     itemLayout.Padding = UDim.new(0, 5)
+    itemLayout.FillDirection = Enum.FillDirection.Vertical
+    itemLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    itemLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+    itemLayout.SortOrder = Enum.SortOrder.LayoutOrder
     
     local function scan()
         for _, v in ipairs(itemScroll:GetChildren()) do if v:IsA("TextLabel") then v:Destroy() end end
@@ -336,7 +372,8 @@ Core.addTab("Exploits", function(page)
             local l = Utils.createLabel(itemScroll, "[Mochila] " .. t.Name, UDim2.new(1, 0, 0, 20))
             l.TextSize = 12
         end
-        itemScroll.CanvasSize = UDim2.new(0, 0, 0, itemLayout.AbsoluteContentSize.Y + 10)
+        -- Ajuste do CanvasSize para ScrollingFrame
+        itemScroll.CanvasSize = UDim2.new(0, 0, 0, itemLayout.AbsoluteContentSize.Y + itemLayout.Padding.Offset * 2)
     end
     Utils.createButton(page, "Escanear Inventário", scan)
 end)
@@ -363,7 +400,7 @@ Core.addTab("Trolls", function(page)
         Utils.notify("Trolls", "Jogadores restaurados!", CONFIG.THEME_SUCCESS)
     end)
     
-    Utils.createLabel(page, "Customização de Alvos", UDim2.new(1, 0, 0, 20), nil, CONFIG.THEME_ACCENT)
+    Utils.createLabel(page, "Customização de Alvos", UDim2.new(1, 0, 0, 20), nil, CONFIG.THEME_ACCENT, CONFIG.FONT_BOLD, 14)
     Utils.createTextBox(page, "Velocidade (Padrão 16)", function(val)
         local s = tonumber(val) or 16
         for _, plr in ipairs(PlayerManager.selected) do
@@ -393,7 +430,12 @@ Core.addTab("Teleport", function(page)
     end)
     
     Utils.createButton(page, "Teleport para o Spawn", function()
-        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(0, 50, 0)
+        -- Assumindo que o spawn é em 0, 50, 0. Pode ser necessário ajustar para o spawn real do jogo.
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(0, 50, 0)
+        else
+            Utils.notify("Teleport", "Seu personagem não está disponível para teleportar!", CONFIG.THEME_ERROR)
+        end
     end)
 end)
 
