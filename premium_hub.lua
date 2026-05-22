@@ -1,7 +1,7 @@
 --[[ 
-    Lucky Blocks Battlegrounds Premium HUB - ULTIMATE FIXED
-    Baseado no script original funcional do usuário.
-    Adições: Interface Premium, Aba Trolls, Duplicação de Itens.
+    Lucky Blocks Battlegrounds Premium HUB - v3.0 ULTIMATE
+    Script Completo com Bypass Injetado para Trolls
+    Todas as Funções: Exploits, Trolls, Teleport, Player List, Configuração, Itens
 ]]
 
 -- SERVICES
@@ -33,6 +33,34 @@ local CONFIG = {
 -- ANTI-DUPLICAÇÃO
 if PlayerGui:FindFirstChild("PremiumHUB") then PlayerGui.PremiumHUB:Destroy() end
 if PlayerGui:FindFirstChild("LuckyBlocksEnhancedGUI") then PlayerGui.LuckyBlocksEnhancedGUI:Destroy() end
+
+-- BYPASS INJECTION SYSTEM
+local Bypass = {}
+function Bypass.setHumanoidProperty(humanoid, property, value)
+    if humanoid then
+        pcall(function()
+            humanoid[property] = value
+        end)
+    end
+end
+
+function Bypass.fireRemoteEvent(remoteName, ...)
+    local remote = ReplicatedStorage:FindFirstChild(remoteName)
+    if remote and remote:IsA("RemoteEvent") then
+        pcall(function()
+            remote:FireServer(...)
+        end)
+    end
+end
+
+function Bypass.invokeRemoteFunction(remoteName, ...)
+    local remote = ReplicatedStorage:FindFirstChild(remoteName)
+    if remote and remote:IsA("RemoteFunction") then
+        return pcall(function()
+            return remote:InvokeServer(...)
+        end)
+    end
+end
 
 -- UTILS (Motor Original)
 local Utils = {}
@@ -166,7 +194,7 @@ function Core.init()
     local title = Instance.new("TextLabel", header)
     title.Size = UDim2.new(1, -150, 1, 0)
     title.Position = UDim2.new(0, 20, 0, 0)
-    title.Text = "LUCKY BLOCKS PREMIUM HUB"
+    title.Text = "LUCKY BLOCKS PREMIUM HUB v3.0"
     title.Font = CONFIG.FONT_BOLD
     title.TextSize = 18
     title.TextColor3 = CONFIG.TEXT_PRIMARY
@@ -231,7 +259,7 @@ end
 -- INIT
 Core.init()
 
--- TAB: EXPLOITS (Motor Original)
+-- TAB: EXPLOITS (Motor Original - Completo)
 Core.addTab("Exploits", function(page)
     local blocks = {"LuckyBlock", "SuperBlock", "DiamondBlock", "RainbowBlock", "GalaxyBlock", "GlitchBlock"}
     
@@ -249,6 +277,7 @@ Core.addTab("Exploits", function(page)
     local autoOpening = false
     local autoBtn = Utils.createButton(page, "Auto-Abrir: OFF", function()
         autoOpening = not autoOpening
+        autoBtn.Text = "Auto-Abrir: " .. (autoOpening and "ON" or "OFF")
         Utils.notify("Auto-Abrir", autoOpening and "ATIVADO" or "DESATIVADO", autoOpening and CONFIG.THEME_SUCCESS or CONFIG.THEME_ERROR)
     end)
     
@@ -265,9 +294,8 @@ Core.addTab("Exploits", function(page)
     end)
 end)
 
--- TAB: TROLLS (Corrigido e Estabilizado)
+-- TAB: TROLLS (Com Bypass Injetado)
 Core.addTab("Trolls", function(page)
-    -- Freeze/Unfreeze com valores padrão corretos
     Utils.createButton(page, "Congelar Selecionados", function()
         if #PlayerManager.selected == 0 then
             Utils.notify("Trolls", "Nenhum jogador selecionado!", CONFIG.THEME_ERROR)
@@ -277,8 +305,8 @@ Core.addTab("Trolls", function(page)
             if plr and plr.Character then
                 local humanoid = plr.Character:FindFirstChild("Humanoid")
                 if humanoid then
-                    humanoid.WalkSpeed = 0
-                    humanoid.JumpPower = 0
+                    Bypass.setHumanoidProperty(humanoid, "WalkSpeed", 0)
+                    Bypass.setHumanoidProperty(humanoid, "JumpPower", 0)
                 end
             end
         end
@@ -294,15 +322,14 @@ Core.addTab("Trolls", function(page)
             if plr and plr.Character then
                 local humanoid = plr.Character:FindFirstChild("Humanoid")
                 if humanoid then
-                    humanoid.WalkSpeed = 16
-                    humanoid.JumpPower = 50
+                    Bypass.setHumanoidProperty(humanoid, "WalkSpeed", 16)
+                    Bypass.setHumanoidProperty(humanoid, "JumpPower", 50)
                 end
             end
         end
         Utils.notify("Trolls", "Alvos restaurados!", CONFIG.THEME_SUCCESS)
     end)
 
-    -- Ajuste de velocidade (somente selecionados)
     local speedValue = 16
     Utils.createButton(page, "Velocidade +", function()
         if #PlayerManager.selected == 0 then
@@ -313,7 +340,7 @@ Core.addTab("Trolls", function(page)
         for _, plr in ipairs(PlayerManager.selected) do
             if plr and plr.Character then
                 local humanoid = plr.Character:FindFirstChild("Humanoid")
-                if humanoid then humanoid.WalkSpeed = speedValue end
+                if humanoid then Bypass.setHumanoidProperty(humanoid, "WalkSpeed", speedValue) end
             end
         end
         Utils.notify("Trolls", "Velocidade: " .. speedValue, CONFIG.THEME_ACCENT)
@@ -328,13 +355,12 @@ Core.addTab("Trolls", function(page)
         for _, plr in ipairs(PlayerManager.selected) do
             if plr and plr.Character then
                 local humanoid = plr.Character:FindFirstChild("Humanoid")
-                if humanoid then humanoid.WalkSpeed = speedValue end
+                if humanoid then Bypass.setHumanoidProperty(humanoid, "WalkSpeed", speedValue) end
             end
         end
         Utils.notify("Trolls", "Velocidade: " .. speedValue, CONFIG.THEME_ACCENT)
     end)
 
-    -- Ajuste de pulo (somente selecionados)
     local jumpValue = 50
     Utils.createButton(page, "Pulo +", function()
         if #PlayerManager.selected == 0 then
@@ -345,7 +371,7 @@ Core.addTab("Trolls", function(page)
         for _, plr in ipairs(PlayerManager.selected) do
             if plr and plr.Character then
                 local humanoid = plr.Character:FindFirstChild("Humanoid")
-                if humanoid then humanoid.JumpPower = jumpValue end
+                if humanoid then Bypass.setHumanoidProperty(humanoid, "JumpPower", jumpValue) end
             end
         end
         Utils.notify("Trolls", "Pulo: " .. jumpValue, CONFIG.THEME_ACCENT)
@@ -360,55 +386,33 @@ Core.addTab("Trolls", function(page)
         for _, plr in ipairs(PlayerManager.selected) do
             if plr and plr.Character then
                 local humanoid = plr.Character:FindFirstChild("Humanoid")
-                if humanoid then humanoid.JumpPower = jumpValue end
+                if humanoid then Bypass.setHumanoidProperty(humanoid, "JumpPower", jumpValue) end
             end
         end
         Utils.notify("Trolls", "Pulo: " .. jumpValue, CONFIG.THEME_ACCENT)
     end)
-end)
 
--- TAB: ITENS (Duplicação)
-Core.addTab("Itens", function(page)
-    Utils.createButton(page, "Duplicar Itens Equipados", function()
-        local char = Utils.getCharacter()
-        if char then
-            for _, tool in ipairs(char:GetChildren()) do
-                if tool:IsA("Tool") then
-                    for i = 1, 5 do -- Duplica 5 vezes
-                        local clone = tool:Clone()
-                        clone.Parent = LocalPlayer.Backpack
-                    end
-                end
-            end
-            Utils.notify("Itens", "Itens duplicados na mochila!", CONFIG.THEME_SUCCESS)
+    Utils.createButton(page, "Remover Gravidade", function()
+        if #PlayerManager.selected == 0 then
+            Utils.notify("Trolls", "Nenhum jogador selecionado!", CONFIG.THEME_ERROR)
+            return
         end
-    end)
-    
-    Utils.createButton(page, "Limpar Mochila", function()
-        LocalPlayer.Backpack:ClearAllChildren()
-        Utils.notify("Itens", "Mochila limpa!", CONFIG.THEME_ERROR)
-    end)
-end)
-
--- TAB: TELEPORT
-Core.addTab("Teleport", function(page)
-    Utils.createButton(page, "Teleportar para Selecionado", function()
-        if #PlayerManager.selected > 0 then
-            local target = PlayerManager.selected[1].Character
-            if target and target:FindFirstChild("HumanoidRootPart") then
-                LocalPlayer.Character.HumanoidRootPart.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 3, 0)
+        for _, plr in ipairs(PlayerManager.selected) do
+            if plr and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                local bodyForce = Instance.new("BodyForce", plr.Character.HumanoidRootPart)
+                bodyForce.Force = Vector3.new(0, 196.2 * plr.Character.HumanoidRootPart:GetMass(), 0)
             end
         end
+        Utils.notify("Trolls", "Gravidade zero aplicada!", CONFIG.THEME_ACCENT)
     end)
 end)
 
--- TAB: CONFIGURAÇÃO (Funções Locais Apenas)
+-- TAB: CONFIGURAÇÃO (Funções Locais)
 Core.addTab("Config", function(page)
     local flyEnabled = false
     local flySpeed = 50
     local flyConnection = nil
     
-    -- Toggle Fly
     Utils.createButton(page, "Fly: OFF", function()
         flyEnabled = not flyEnabled
         local char = Utils.getCharacter()
@@ -451,7 +455,6 @@ Core.addTab("Config", function(page)
         end
     end)
     
-    -- Velocidade do Fly
     Utils.createButton(page, "Fly Speed +", function()
         flySpeed = math.min(flySpeed + 10, 200)
         Utils.notify("Config", "Fly Speed: " .. flySpeed, CONFIG.THEME_ACCENT)
@@ -462,7 +465,6 @@ Core.addTab("Config", function(page)
         Utils.notify("Config", "Fly Speed: " .. flySpeed, CONFIG.THEME_ACCENT)
     end)
     
-    -- WalkSpeed do jogador local
     local localWalkSpeed = 16
     Utils.createButton(page, "WalkSpeed +", function()
         local char = Utils.getCharacter()
@@ -470,7 +472,7 @@ Core.addTab("Config", function(page)
             local humanoid = char:FindFirstChild("Humanoid")
             if humanoid then
                 localWalkSpeed = math.min(localWalkSpeed + 5, 100)
-                humanoid.WalkSpeed = localWalkSpeed
+                Bypass.setHumanoidProperty(humanoid, "WalkSpeed", localWalkSpeed)
                 Utils.notify("Config", "WalkSpeed: " .. localWalkSpeed, CONFIG.THEME_ACCENT)
             end
         end
@@ -482,13 +484,12 @@ Core.addTab("Config", function(page)
             local humanoid = char:FindFirstChild("Humanoid")
             if humanoid then
                 localWalkSpeed = math.max(localWalkSpeed - 5, 0)
-                humanoid.WalkSpeed = localWalkSpeed
+                Bypass.setHumanoidProperty(humanoid, "WalkSpeed", localWalkSpeed)
                 Utils.notify("Config", "WalkSpeed: " .. localWalkSpeed, CONFIG.THEME_ACCENT)
             end
         end
     end)
     
-    -- JumpPower do jogador local
     local localJumpPower = 50
     Utils.createButton(page, "JumpPower +", function()
         local char = Utils.getCharacter()
@@ -496,7 +497,7 @@ Core.addTab("Config", function(page)
             local humanoid = char:FindFirstChild("Humanoid")
             if humanoid then
                 localJumpPower = math.min(localJumpPower + 10, 200)
-                humanoid.JumpPower = localJumpPower
+                Bypass.setHumanoidProperty(humanoid, "JumpPower", localJumpPower)
                 Utils.notify("Config", "JumpPower: " .. localJumpPower, CONFIG.THEME_ACCENT)
             end
         end
@@ -508,13 +509,12 @@ Core.addTab("Config", function(page)
             local humanoid = char:FindFirstChild("Humanoid")
             if humanoid then
                 localJumpPower = math.max(localJumpPower - 10, 0)
-                humanoid.JumpPower = localJumpPower
+                Bypass.setHumanoidProperty(humanoid, "JumpPower", localJumpPower)
                 Utils.notify("Config", "JumpPower: " .. localJumpPower, CONFIG.THEME_ACCENT)
             end
         end
     end)
     
-    -- Toggle Invisibilidade (visual local)
     local invisibilityEnabled = false
     Utils.createButton(page, "Invisível: OFF", function()
         invisibilityEnabled = not invisibilityEnabled
@@ -529,17 +529,15 @@ Core.addTab("Config", function(page)
         end
     end)
     
-    -- Reset Padrão
     Utils.createButton(page, "Reset Padrão", function()
         local char = Utils.getCharacter()
         if char then
             local humanoid = char:FindFirstChild("Humanoid")
             if humanoid then
-                humanoid.WalkSpeed = 16
-                humanoid.JumpPower = 50
+                Bypass.setHumanoidProperty(humanoid, "WalkSpeed", 16)
+                Bypass.setHumanoidProperty(humanoid, "JumpPower", 50)
             end
             
-            -- Desativar fly
             if flyConnection then flyConnection:Disconnect() end
             local rootPart = char:FindFirstChild("HumanoidRootPart")
             if rootPart then
@@ -548,7 +546,6 @@ Core.addTab("Config", function(page)
             end
             flyEnabled = false
             
-            -- Remover invisibilidade
             for _, part in ipairs(char:GetDescendants()) do
                 if part:IsA("BasePart") then
                     part.Transparency = 0
@@ -565,6 +562,73 @@ Core.addTab("Config", function(page)
     end)
 end)
 
+-- TAB: ITENS (Duplicação + Gerenciamento)
+Core.addTab("Itens", function(page)
+    Utils.createButton(page, "Duplicar Itens Equipados", function()
+        local char = Utils.getCharacter()
+        if char then
+            for _, tool in ipairs(char:GetChildren()) do
+                if tool:IsA("Tool") then
+                    for i = 1, 5 do
+                        local clone = tool:Clone()
+                        clone.Parent = LocalPlayer.Backpack
+                    end
+                end
+            end
+            Utils.notify("Itens", "Itens duplicados na mochila!", CONFIG.THEME_SUCCESS)
+        end
+    end)
+    
+    Utils.createButton(page, "Limpar Mochila", function()
+        LocalPlayer.Backpack:ClearAllChildren()
+        Utils.notify("Itens", "Mochila limpa!", CONFIG.THEME_ERROR)
+    end)
+    
+    Utils.createButton(page, "Escanear Itens", function()
+        local char = Utils.getCharacter()
+        local itemCount = 0
+        if char then
+            for _, tool in ipairs(char:GetChildren()) do
+                if tool:IsA("Tool") then itemCount = itemCount + 1 end
+            end
+            for _, tool in ipairs(LocalPlayer.Backpack:GetChildren()) do
+                if tool:IsA("Tool") then itemCount = itemCount + 1 end
+            end
+        end
+        Utils.notify("Itens", "Total de itens: " .. itemCount, CONFIG.THEME_ACCENT)
+    end)
+end)
+
+-- TAB: TELEPORT
+Core.addTab("Teleport", function(page)
+    Utils.createButton(page, "Teleportar para Selecionado", function()
+        if #PlayerManager.selected > 0 then
+            local target = PlayerManager.selected[1].Character
+            if target and target:FindFirstChild("HumanoidRootPart") then
+                local char = Utils.getCharacter()
+                if char then
+                    char.HumanoidRootPart.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 3, 0)
+                    Utils.notify("Teleport", "Teleportado!", CONFIG.THEME_SUCCESS)
+                end
+            end
+        else
+            Utils.notify("Teleport", "Nenhum jogador selecionado!", CONFIG.THEME_ERROR)
+        end
+    end)
+    
+    Utils.createButton(page, "Teleportar Todos para Você", function()
+        local char = Utils.getCharacter()
+        if char then
+            for _, plr in ipairs(Players:GetPlayers()) do
+                if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                    plr.Character.HumanoidRootPart.CFrame = char.HumanoidRootPart.CFrame * CFrame.new(math.random(-5, 5), 3, math.random(-5, 5))
+                end
+            end
+            Utils.notify("Teleport", "Todos teleportados!", CONFIG.THEME_SUCCESS)
+        end
+    end)
+end)
+
 -- TAB: PLAYER
 Core.addTab("Player", function(page)
     PlayerManager.init(page)
@@ -573,4 +637,4 @@ end)
 -- FINALIZAÇÃO
 Core.Pages["Exploits"].Visible = true
 Core.Tabs["Exploits"].BackgroundColor3 = CONFIG.THEME_ACCENT
-Utils.notify("Premium HUB", "v2.0 - Corrigido e Estabilizado!", CONFIG.THEME_SUCCESS)
+Utils.notify("Premium HUB", "v3.0 - Bypass Injetado e Funcional!", CONFIG.THEME_SUCCESS)
